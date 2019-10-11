@@ -92,7 +92,34 @@ class DeckManager: NSWindowController {
             case 45:
                 self.addDeck(self)
                 return nil
-
+            
+            case 9:
+                if let string = NSPasteboard.general.pasteboardItems?.first?.string(forType: .string) {
+                
+                    let deck = Deck()
+                    let cards: [Card]?
+                    if let serializedDeck = DeckSerializer.deserialize(input: string) {
+                        deck.playerClass = serializedDeck.playerClass
+                        deck.name = serializedDeck.name
+                        cards = serializedDeck.cards
+                    } else if let (cardClass, _cards) = DeckSerializer.deserializeDeckString(deckString: string) {
+                        deck.playerClass = cardClass
+                        deck.name = "Imported deck"
+                        cards = _cards
+                    } else {
+                        let msg = NSLocalizedString("Failed to import deck from \n", comment: "")
+                            + string
+                        NSAlert.show(style: .critical,
+                                     message: msg)
+                        return nil
+                    }
+                    
+                    if let _cards = cards {
+                        RealmHelper.add(deck: deck, with: _cards)
+                        self.addNewDeck(deck: deck)
+                    }
+                }
+                return e
             default:
                 logger.verbose("unsupported keycode \(e.keyCode)")
             }
